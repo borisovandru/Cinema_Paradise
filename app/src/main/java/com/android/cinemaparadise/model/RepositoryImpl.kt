@@ -5,7 +5,7 @@ import java.util.*
 class RepositoryImpl : Repository {
 
     override fun getMoviesFromServer(): Movie {
-        return Movie("Movie Server", Calendar.getInstance().time)
+        return Movie("Фильм из сервера", "Movie Server", Calendar.getInstance().time)
     }
 
     override fun getNowPlayingFromLocalStorage(): List<Movie> {
@@ -15,5 +15,4 @@ class RepositoryImpl : Repository {
     override fun getUpcomingFromLocalStorage(): List<Movie> {
         return getUpcomingMovies()
     }
-
 }

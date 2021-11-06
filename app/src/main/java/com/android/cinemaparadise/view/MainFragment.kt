@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.cinemaparadise.R
 import com.android.cinemaparadise.databinding.MainFragmentBinding
+import com.android.cinemaparadise.model.Movie
 import com.android.cinemaparadise.viewmodel.AppState
 import com.android.cinemaparadise.viewmodel.MainViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -63,7 +64,7 @@ class MainFragment : Fragment() {
     }
 
     private fun initViewModel() {
-        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         viewModel.getLiveData().observe(viewLifecycleOwner) { renderData(it) }
         viewModel.getDataFromLocalSource()
     }
@@ -79,6 +80,8 @@ class MainFragment : Fragment() {
                 loadingLayout.visibility = View.GONE
                 adapterPlayNow.setData(movieDataPlay)
                 adapterUpcoming.setData(movieDataCome)
+                adapterPlayNow.setOnItemClickListener { openScreen(it) }
+                adapterUpcoming.setOnItemClickListener { openScreen(it) }
             }
             is AppState.Loading -> {
                 loadingLayout.visibility = View.VISIBLE
@@ -93,8 +96,21 @@ class MainFragment : Fragment() {
         }
     }
 
+    private fun openScreen(movie: Movie) {
+        val manager = activity?.supportFragmentManager
+        if (manager != null) {
+            val bundle = Bundle()
+            bundle.putParcelable(DetailsFragment.BUNDLE_EXTRA, movie)
+            manager.beginTransaction()
+                .replace(R.id.container, DetailsFragment.newInstance(bundle))
+                .addToBackStack("")
+                .commitAllowingStateLoss()
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        adapterPlayNow.removeListener()
     }
 }
