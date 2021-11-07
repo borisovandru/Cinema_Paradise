@@ -5,6 +5,7 @@ import android.view.Menu
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.fragment.app.Fragment
 import com.android.cinemaparadise.R
 import com.android.cinemaparadise.databinding.MainActivityBinding
 
@@ -17,36 +18,38 @@ class MainActivity : AppCompatActivity() {
         binding = MainActivityBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-        initButtons()
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(binding.container.id, MainFragment.newInstance())
-                .commitNow()
+        initNavigationMenu()
+        when (savedInstanceState) {
+            null -> loadFragment(MainFragment.newInstance())
         }
     }
 
-    private fun initButtons() {
-        binding.btnHome.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.setBackgroundResource(
-                when {
-                    isChecked -> R.drawable.ic_baseline_home_20
-                    else  -> R.drawable.ic_baseline_home_20_off
-                })
+    private fun initNavigationMenu() {
+        binding.navigation.setOnNavigationItemSelectedListener {
+            when (it.itemId) {
+                R.id.item_home -> {
+                    loadFragment(MainFragment.newInstance())
+                    true
+                }
+                R.id.item_favorites -> {
+                    loadFragment(MainFragment.newInstance())
+                    true
+                }
+                R.id.item_ratings -> {
+                    loadFragment(MainFragment.newInstance())
+                    true
+                }
+                else -> false
+            }
         }
-        binding.btnFavorite.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.setBackgroundResource(
-                when {
-                    isChecked -> R.drawable.ic_baseline_star_border_20
-                    else  -> R.drawable.ic_baseline_star_border_20_off
-                })
-        }
-        binding.btnRating.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.setBackgroundResource(
-                when {
-                    isChecked -> R.drawable.ic_baseline_graphic_eq_20
-                    else  -> R.drawable.ic_baseline_graphic_eq_20_off
-                })
-        }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        // load fragment
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.container, fragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

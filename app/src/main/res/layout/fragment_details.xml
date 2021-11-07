@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:background="@drawable/ic_baseline_favorite_border_16"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"></com.google.android.material.button.MaterialButton>
     </LinearLayout>
 
     <TextView
@@ -83,7 +83,8 @@
             <TextView
                 android:id="@+id/revenue"
                 style="@style/detail"
-                android:text="@string/revenue" />
+                android:text="@string/revenue"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/date_release"
