@@ -1,5 +1,6 @@
 package com.android.cinemaparadise.view
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,25 +9,26 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.cinemaparadise.R
-import com.android.cinemaparadise.databinding.MainFragmentBinding
+import com.android.cinemaparadise.databinding.FragmentMainBinding
 import com.android.cinemaparadise.model.Movie
 import com.android.cinemaparadise.viewmodel.AppState
 import com.android.cinemaparadise.viewmodel.MainViewModel
-import com.google.android.material.snackbar.Snackbar
 
 class MainFragment : Fragment() {
 
     companion object {
+        const val NUM_COLUMN = 2
         fun newInstance() = MainFragment()
     }
 
     private lateinit var viewModel: MainViewModel
-    private var _binding: MainFragmentBinding? = null
+    private var _binding: FragmentMainBinding? = null
     private val adapterPlayNow = NowPlayingFragmentAdapter()
     private val adapterUpcoming = UpcomingFragmentAdapter()
-
+    private var isLandscape = false
     private val binding
         get() = _binding!!
 
@@ -34,7 +36,7 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = MainFragmentBinding.inflate(inflater, container, false)
+        _binding = FragmentMainBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -47,6 +49,14 @@ class MainFragment : Fragment() {
 
     private fun initRecycler() {
         // Создаем два списка
+        isLandscape = when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                binding.recyclerPlaying.layoutManager = GridLayoutManager(context, NUM_COLUMN)
+                binding.recyclerUpcoming.layoutManager = GridLayoutManager(context, NUM_COLUMN)
+                true
+            }
+            else -> false
+        }
         binding.recyclerPlaying.adapter = adapterPlayNow
         binding.recyclerUpcoming.adapter = adapterUpcoming
         val itemDecoration = dividerItemDecoration()
@@ -64,45 +74,54 @@ class MainFragment : Fragment() {
     }
 
     private fun initViewModel() {
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.getLiveData().observe(viewLifecycleOwner) { renderData(it) }
         viewModel.getDataFromLocalSource()
     }
 
-    private fun renderData(appState: AppState) {
+    private fun renderData(appState: AppState) = with(binding) {
         //Заполняем списки
-        val loadingLayout = binding.loadingLayout
-        val mainView = binding.mainView
         when (appState) {
             is AppState.Success -> {
                 val movieDataPlay = appState.movieDataPlay
                 val movieDataCome = appState.movieDataCome
-                loadingLayout.visibility = View.GONE
-                adapterPlayNow.setData(movieDataPlay)
-                adapterUpcoming.setData(movieDataCome)
+                loadingLayout.hideIf { true }
+                // используем функцию расширения вместо setData
+                adapterPlayNow.also {
+                    it.movieData = movieDataPlay
+                    it.notifyDataSetChanged()
+                }
+                adapterUpcoming.also {
+                    it.movieData = movieDataCome
+                    it.notifyDataSetChanged()
+                }
+                // реализация метода при помощи лямбда, it - объект типа Movie
                 adapterPlayNow.setOnItemClickListener { openScreen(it) }
                 adapterUpcoming.setOnItemClickListener { openScreen(it) }
             }
             is AppState.Loading -> {
-                loadingLayout.visibility = View.VISIBLE
+                loadingLayout.showIf { true }
             }
             is AppState.Error -> {
-                loadingLayout.visibility = View.GONE
-                Snackbar
-                    .make(mainView, "Error", Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Reload") { viewModel.getDataFromLocalSource() }
-                    .show()
+                loadingLayout.hideIf { true }
+                mainView.showSnackBar(getString(R.string.error),
+                    getString(R.string.reload),
+                    { viewModel.getDataFromLocalSource() })
+                mainView.hideKeyboard()
             }
         }
     }
 
     private fun openScreen(movie: Movie) {
         val manager = activity?.supportFragmentManager
-        if (manager != null) {
-            val bundle = Bundle()
-            bundle.putParcelable(DetailsFragment.BUNDLE_EXTRA, movie)
+        manager?.let {
             manager.beginTransaction()
-                .replace(R.id.container, DetailsFragment.newInstance(bundle))
+                .replace(
+                    R.id.container, DetailsFragment.newInstance(Bundle()
+                        .apply {
+                            putParcelable(DetailsFragment.BUNDLE_EXTRA, movie)
+                        })
+                )
                 .addToBackStack("")
                 .commitAllowingStateLoss()
         }
